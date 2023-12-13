@@ -94,6 +94,16 @@ class AutogrowingTextView: UITextView {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         self.becomeFirstResponder()
     }
+    
+    override func caretRect(for position: UITextPosition) -> CGRect {
+           var superRect = super.caretRect(for: position)
+           guard let font = self.font else { return superRect }
+
+           // "descender" is expressed as a negative value,
+           // so to add its height you must subtract its value
+           superRect.size.height = font.pointSize - font.descender
+           return superRect
+       }
 
     private func calculatedSize(attributedText: NSAttributedString, frame: CGSize, textContainerInset: UIEdgeInsets) -> CGSize {
         DispatchQueue.global(qos: .userInteractive).sync { [lineFragmentPadding = textContainer.lineFragmentPadding ]  in

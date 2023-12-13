@@ -21,9 +21,61 @@
 import Foundation
 import UIKit
 
-public class StrikethroughCommand: AttributesToggleCommand {
-    public init() {
-        super.init(name: CommandName("_StrikethroughCommand"),
-                   attributes: [.strikethroughStyle: NSUnderlineStyle.single.rawValue])
+public class StrikethroughCommand: EditorCommand {
+ 
+    public let attributeKey:NSAttributedString.Key = .strikethroughStyle
+    public let attributeValue = NSUnderlineStyle.single.rawValue
+    
+    public let name: CommandName
+    public var isEnable: Bool
+
+    //    init(attributeKey: NSAttributedString.Key, attributeValue: AttributeType, name: CommandName) {
+    //        self.attributeKey = attributeKey
+    //        self.attributeValue = attributeValue
+    //        self.name = name
+    //    }
+    
+    public init(name: String, isEnable:Bool = true){
+        self.name = CommandName(name)
+        self.isEnable = isEnable
+    }
+    
+    
+    public func execute(on editor: EditorView) {
+        let selectedText = editor.selectedText
+        if editor.isEmpty || editor.selectedRange == .zero || selectedText.length == 0 {
+            
+//            if editor.typingAttributes[attributeKey] == nil {
+//                editor.typingAttributes[attributeKey] = attributeValue
+//            } else {
+//                var typingAttributes = editor.typingAttributes
+//                typingAttributes[attributeKey] = nil
+//                editor.typingAttributes = typingAttributes
+//            }
+//            
+            if isEnable {
+                editor.typingAttributes[attributeKey] = attributeValue
+            } else {
+                var typingAttributes = editor.typingAttributes
+                typingAttributes[attributeKey] = nil
+                editor.typingAttributes = typingAttributes
+            }
+            
+            return
+        }
+        
+        let initAttr = selectedText.attribute(attributeKey, at: 0, effectiveRange: nil)
+     
+        
+        editor.attributedText.enumerateAttribute(attributeKey, in: editor.selectedRange, options: .longestEffectiveRangeNotRequired) { attrValue, range, _ in
+            
+//            if initAttr == nil {
+            if isEnable {
+                editor.addAttribute(attributeKey, value: attributeValue, at: range)
+            } else {
+                editor.removeAttribute(attributeKey, at: range)
+            }
+        }
+        
     }
 }
