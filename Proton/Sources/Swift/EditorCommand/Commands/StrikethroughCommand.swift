@@ -64,7 +64,7 @@ public class StrikethroughCommand: EditorCommand {
             return
         }
         
-        let initAttr = selectedText.attribute(attributeKey, at: 0, effectiveRange: nil)
+//        _ = selectedText.attribute(attributeKey, at: 0, effectiveRange: nil)
      
         
         editor.attributedText.enumerateAttribute(attributeKey, in: editor.selectedRange, options: .longestEffectiveRangeNotRequired) { attrValue, range, _ in

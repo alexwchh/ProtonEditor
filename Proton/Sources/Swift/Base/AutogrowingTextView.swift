@@ -63,7 +63,7 @@ class AutogrowingTextView: UITextView {
         isSizeRecalculationRequired = false
         recalculateHeight()
     }
-
+    
     func recalculateHeight(size: CGSize? = nil) {
         guard allowAutogrowing else { return }
         let bounds = self.bounds.integral

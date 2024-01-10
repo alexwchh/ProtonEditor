@@ -1,0 +1,14 @@
+{
+  "pins" : [
+    {
+      "identity" : "proton",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/rajdeep/proton.git",
+      "state" : {
+        "revision" : "3ae97ee482905edfaf6fb92d44c5eee3d61c33bd",
+        "version" : "0.8.24"
+      }
+    }
+  ],
+  "version" : 2
+}

@@ -3,12 +3,10 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1B0EA92C270432C200328468 /* ProtonCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1B0EA92B270432C200328468 /* ProtonCore.framework */; };
-		1B0EA92D270432CC00328468 /* ProtonCore.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 1B0EA92B270432C200328468 /* ProtonCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		1B164F2E23D282A500A0869A /* JSONDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B164F2923D282A500A0869A /* JSONDecoder.swift */; };
 		1B164F2F23D282A500A0869A /* PanelDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B164F2B23D282A500A0869A /* PanelDecoder.swift */; };
 		1B164F3023D282A500A0869A /* TextDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B164F2C23D282A500A0869A /* TextDecoder.swift */; };
@@ -50,18 +48,18 @@
 		1B91F4B623C73D01003F9B55 /* TypeaheadTextProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B91F4B523C73D01003F9B55 /* TypeaheadTextProcessor.swift */; };
 		1B91F4B823C73D3C003F9B55 /* MarkupTextProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B91F4B723C73D3C003F9B55 /* MarkupTextProcessor.swift */; };
 		1B91F4BA23C73D96003F9B55 /* TextProcessorExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B91F4B923C73D96003F9B55 /* TextProcessorExampleViewController.swift */; };
-		1BB8904223C5A74700F087AE /* Proton.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 1BFFEF0223C3048E00D2BA35 /* Proton.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		1BD1BE72289745D800FA8AE4 /* GridViewAttachment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD1BE71289745D800FA8AE4 /* GridViewAttachment.swift */; };
 		1BD1BE78289746C900FA8AE4 /* CreateGridViewCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD1BE77289746C900FA8AE4 /* CreateGridViewCommand.swift */; };
 		1BD993C223CA8FD200563ACB /* PanelAttachment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD993C123CA8FD200563ACB /* PanelAttachment.swift */; };
 		1BFFEEFE23C2D3E500D2BA35 /* MatchContentAttachmentExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BFFEEFD23C2D3E500D2BA35 /* MatchContentAttachmentExampleViewController.swift */; };
 		1BFFEF0023C303F100D2BA35 /* AutogrowingTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BFFEEFF23C303F100D2BA35 /* AutogrowingTextField.swift */; };
-		1BFFEF0323C3048E00D2BA35 /* Proton.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1BFFEF0223C3048E00D2BA35 /* Proton.framework */; };
 		1BFFEF0723C30B8E00D2BA35 /* FullWidthAttachmentExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BFFEF0623C30B8E00D2BA35 /* FullWidthAttachmentExampleViewController.swift */; };
 		1BFFEF0A23C30C9900D2BA35 /* PanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BFFEF0923C30C9900D2BA35 /* PanelView.swift */; };
 		1BFFEF0E23C3228900D2BA35 /* FixedWidthAttachmentExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BFFEF0D23C3228900D2BA35 /* FixedWidthAttachmentExampleViewController.swift */; };
 		1BFFEF1023C32B5A00D2BA35 /* WidthRangeAttachmentExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BFFEF0F23C32B5A00D2BA35 /* WidthRangeAttachmentExampleViewController.swift */; };
 		1BFFEF1223C3310A00D2BA35 /* PercentWidthAttachmentExampleViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BFFEF1123C3310A00D2BA35 /* PercentWidthAttachmentExampleViewController.swift */; };
+		87464FF82B4E967A00BA5D41 /* Proton in Frameworks */ = {isa = PBXBuildFile; productRef = 87464FF72B4E967A00BA5D41 /* Proton */; };
+		87464FFF2B4E969100BA5D41 /* ProtonCore in Frameworks */ = {isa = PBXBuildFile; productRef = 87464FFE2B4E969100BA5D41 /* ProtonCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -80,21 +78,6 @@
 			remoteInfo = ExampleApp;
 		};
 /* End PBXContainerItemProxy section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		1BB8904123C5A73500F087AE /* Copy Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				1B0EA92D270432CC00328468 /* ProtonCore.framework in Copy Frameworks */,
-				1BB8904223C5A74700F087AE /* Proton.framework in Copy Frameworks */,
-			);
-			name = "Copy Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		1B0EA92B270432C200328468 /* ProtonCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = ProtonCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -165,8 +148,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1BFFEF0323C3048E00D2BA35 /* Proton.framework in Frameworks */,
-				1B0EA92C270432C200328468 /* ProtonCore.framework in Frameworks */,
+				87464FF82B4E967A00BA5D41 /* Proton in Frameworks */,
+				87464FFF2B4E969100BA5D41 /* ProtonCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -416,13 +399,16 @@
 				1B6D2FC923BD46ED0019CE40 /* Sources */,
 				1B6D2FCA23BD46ED0019CE40 /* Frameworks */,
 				1B6D2FCB23BD46ED0019CE40 /* Resources */,
-				1BB8904123C5A73500F087AE /* Copy Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			name = ExampleApp;
+			packageProductDependencies = (
+				87464FF72B4E967A00BA5D41 /* Proton */,
+				87464FFE2B4E969100BA5D41 /* ProtonCore */,
+			);
 			productName = ExampleApp;
 			productReference = 1B6D2FCD23BD46ED0019CE40 /* ExampleApp.app */;
 			productType = "com.apple.product-type.application";
@@ -441,6 +427,8 @@
 				1B6D2FE523BD46F20019CE40 /* PBXTargetDependency */,
 			);
 			name = ExampleAppTests;
+			packageProductDependencies = (
+			);
 			productName = ExampleAppTests;
 			productReference = 1B6D2FE323BD46F20019CE40 /* ExampleAppTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -495,6 +483,9 @@
 				Base,
 			);
 			mainGroup = 1B6D2FC423BD46ED0019CE40;
+			packageReferences = (
+				874650002B4E96EE00BA5D41 /* XCRemoteSwiftPackageReference "proton" */,
+			);
 			productRefGroup = 1B6D2FCE23BD46ED0019CE40 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -762,7 +753,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = YES;
-				DEVELOPMENT_TEAM = 5ET5H5LLAF;
+				DEVELOPMENT_TEAM = V7WB69Z4A2;
 				INFOPLIST_FILE = ExampleApp/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -770,7 +761,8 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.raj.proton.ExampleApp4;
+				PRODUCT_BUNDLE_IDENTIFIER = wangchenghao.proton;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=macosx*]" = maccatalyst.maccatalyst.wangchenghao.proton;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTS_MACCATALYST = YES;
 				SWIFT_VERSION = 5.0;
@@ -786,7 +778,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = YES;
-				DEVELOPMENT_TEAM = 5ET5H5LLAF;
+				DEVELOPMENT_TEAM = V7WB69Z4A2;
 				INFOPLIST_FILE = ExampleApp/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -794,7 +786,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.proton.ExampleApp;
+				PRODUCT_BUNDLE_IDENTIFIER = wangchenghao.proton;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTS_MACCATALYST = YES;
 				SWIFT_VERSION = 5.0;
@@ -920,6 +912,28 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		874650002B4E96EE00BA5D41 /* XCRemoteSwiftPackageReference "proton" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/rajdeep/proton.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.8.24;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		87464FF72B4E967A00BA5D41 /* Proton */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Proton;
+		};
+		87464FFE2B4E969100BA5D41 /* ProtonCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ProtonCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1B6D2FC523BD46ED0019CE40 /* Project object */;
 }

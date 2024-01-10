@@ -142,6 +142,9 @@ open class EditorView: UIView {
     // causes issues with cached bounds that shows up when rotating the device.
     private var pendingAttributedText: NSAttributedString?
 
+    open override var intrinsicContentSize: CGSize {
+                frame.height > 0 ? contentSize : richTextView.intrinsicContentSize
+            }
     var editorContextDelegate: EditorViewDelegate? {
         get { editorViewContext.delegate }
     }
@@ -242,6 +245,23 @@ open class EditorView: UIView {
         self.richTextView.textProcessor = textProcessor
         setup()
     }
+    
+    public func undo(){
+        richTextView.undoManager?.undo()
+    }
+    
+    public func redo(){
+        richTextView.undoManager?.redo()
+    }
+    
+    public func canUndo() -> Bool?{
+        richTextView.undoManager?.canUndo
+    }
+    
+    public func canRedo() -> Bool?{
+        richTextView.undoManager?.canRedo
+    }
+
 
     /// Input accessory view to be used
     open var editorInputAccessoryView: UIView? {
@@ -474,7 +494,7 @@ open class EditorView: UIView {
             renderedViewport = nil
             // Clear text before setting new value to avoid issues with formatting/layout when
             // editor is hosted in a scrollable container and content is set multiple times.
-            richTextView.attributedText = NSAttributedString()
+//            richTextView.attributedText = NSAttributedString()
 
             let isDeferred = pendingAttributedText != nil
             pendingAttributedText = nil
@@ -756,6 +776,10 @@ open class EditorView: UIView {
         }
         let isReady = window != nil
         AggregateEditorViewDelegate.editor(self, isReady: isReady)
+    }
+    
+    open func editorReloadInputViews() {
+        richTextView.reloadInputViews()
     }
 
     /// Asks the view to calculate and return the size that best fits the specified size.

@@ -654,8 +654,8 @@ class RichTextView: AutogrowingTextView {
             return super.caretRect(for: position)
         }
 
-        let location = offset(from: beginningOfDocument, to: position)
-        let lineRect = layoutManager.boundingRect(forGlyphRange: NSRange(location: location, length: 0), in: textContainer)
+        _ = offset(from: beginningOfDocument, to: position)
+//        let lineRect = layoutManager.boundingRect(forGlyphRange: NSRange(location: location, length: 0), in: textContainer)
 
         var caretRect = super.caretRect(for: position)
         guard let font = self.font else { return caretRect }
