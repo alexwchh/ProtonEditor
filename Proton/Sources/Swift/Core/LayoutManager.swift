@@ -30,8 +30,13 @@ protocol LayoutManagerDelegate: AnyObject {
     var textContainerInset: UIEdgeInsets { get }
 
     var listLineFormatting: LineFormatting { get }
+    
+    var isLineNumbersEnabled: Bool { get }
+    var lineNumberFormatting: LineNumberFormatting { get }
+    var lineNumberWrappingMarker: String? { get }
 
     func listMarkerForItem(at index: Int, level: Int, previousLevel: Int, attributeValue: Any?) -> ListLineMarker
+    func lineNumberString(for index: Int) -> String?
 }
 
 class LayoutManager: NSLayoutManager {
@@ -270,24 +275,61 @@ class LayoutManager: NSLayoutManager {
         return stringRect
     }
 
+    private func rectForLineNumbers(markerSize: CGSize, rect: CGRect, width: CGFloat) -> CGRect {
+        let topInset = layoutManagerDelegate?.textContainerInset.top ?? 0
+        let spacerRect = CGRect(origin: CGPoint(x: 0, y: topInset), size: CGSize(width: width, height: rect.height))
+
+        let scaleFactor = markerSize.height / spacerRect.height
+        var markerSizeToUse = markerSize
+        // Resize maintaining aspect ratio if bullet height is more than available line height
+        if scaleFactor > 1 {
+            markerSizeToUse = CGSize(width: markerSize.width/scaleFactor, height: markerSize.height/scaleFactor)
+        }
+
+        let trailingPadding: CGFloat = 2
+        let yPos = topInset + rect.minY
+        let stringRect = CGRect(origin: CGPoint(x: spacerRect.maxX - markerSizeToUse.width - trailingPadding, y: yPos), size: markerSizeToUse)
+
+        //        debugRect(rect: spacerRect, color: .blue)
+        //        debugRect(rect: stringRect, color: .red)
+
+        return stringRect
+    }
+
+    override func drawsOutsideLineFragment(forGlyphAt glyphIndex: Int) -> Bool {
+        true
+    }
+
+    var hasLineSpacing: Bool {
+        var lineCount = 0
+        guard let textStorage else { return false}
+        enumerateLineFragments(forGlyphRange: textStorage.fullRange, using: { _, _, _, _, stop in
+            lineCount += 1
+            if lineCount > 1 {
+                stop.pointee = true
+            }
+        })
+        return lineCount > 1 || (lineCount > 0 && extraLineFragmentRect.height > 0)
+    }
+
     override func drawBackground(forGlyphRange glyphsToShow: NSRange, at origin: CGPoint) {
         super.drawBackground(forGlyphRange: glyphsToShow, at: origin)
         guard let textStorage = textStorage,
               let currentCGContext = UIGraphicsGetCurrentContext()
         else { return }
+        currentCGContext.saveGState()
 
         let characterRange = self.characterRange(forGlyphRange: glyphsToShow, actualGlyphRange: nil)
         textStorage.enumerateAttribute(.backgroundStyle, in: characterRange) { attr, bgStyleRange, _ in
             var rects = [CGRect]()
             if let backgroundStyle = attr as? BackgroundStyle {
                 let bgStyleGlyphRange = self.glyphRange(forCharacterRange: bgStyleRange, actualCharacterRange: nil)
-                enumerateLineFragments(forGlyphRange: bgStyleGlyphRange) { _, usedRect, textContainer, lineRange, _ in
-                    let usedRect = usedRect.integral
+                enumerateLineFragments(forGlyphRange: bgStyleGlyphRange) { rect1, usedRect, textContainer, lineRange, _ in
                     let rangeIntersection = NSIntersectionRange(bgStyleGlyphRange, lineRange)
                     let paragraphStyle = textStorage.attribute(.paragraphStyle, at: rangeIntersection.location, effectiveRange: nil) as? NSParagraphStyle ?? self.defaultParagraphStyle
                     let font = textStorage.attribute(.font, at: rangeIntersection.location, effectiveRange: nil) as? UIFont ?? self.defaultFont
                     let lineHeightMultiple = max(paragraphStyle.lineHeightMultiple, 1)
-                    var rect = self.boundingRect(forGlyphRange: rangeIntersection, in: textContainer).integral
+                    var rect = self.boundingRect(forGlyphRange: rangeIntersection, in: textContainer)
                     let lineHeightMultipleOffset = (rect.size.height - rect.size.height/lineHeightMultiple)
                     let lineSpacing = paragraphStyle.lineSpacing
                     if backgroundStyle.widthMode == .matchText {
@@ -296,12 +338,25 @@ class LayoutManager: NSLayoutManager {
                             rect.size.width = contentWidth
                     }
 
-                    let inset = self.layoutManagerDelegate?.textContainerInset ?? .zero
                     switch backgroundStyle.heightMode {
                     case .matchTextExact:
-                        rect.origin.y = usedRect.origin.y - (font.pointSize - font.ascender)
-                        rect.origin.y += (font.ascender - font.capHeight)
-                        rect.size.height =  font.capHeight + abs(font.descender)
+                        let styledText = textStorage.attributedSubstring(from: bgStyleGlyphRange)
+                        var textRect = styledText.boundingRect(with: rect.size, options: [.usesFontLeading, .usesDeviceMetrics], context: nil)
+                        textRect.origin = rect.origin
+                        textRect.size.width = rect.width
+
+                        textRect.origin.y += abs(font.descender)
+
+                        let delta = usedRect.height - (font.lineHeight + font.leading)
+                        textRect.origin.y += delta
+                        let hasLineSpacing = (usedRect.height - font.lineHeight) == paragraphStyle.lineSpacing
+                        let isExtraLineHeight = ((usedRect.height - font.lineHeight) - font.leading) > 0.001
+
+                        if hasLineSpacing || isExtraLineHeight {
+                            textRect.origin.y -= (paragraphStyle.lineSpacing - font.leading)
+                        }
+
+                        rect = textRect
                     case .matchText:
                         let styledText = textStorage.attributedSubstring(from: bgStyleGlyphRange)
                         let textRect = styledText.boundingRect(with: rect.size, options: .usesFontLeading, context: nil)
@@ -315,12 +370,62 @@ class LayoutManager: NSLayoutManager {
                         rect.size.height = usedRect.height
                     }
 
-
-                    rects.append(rect.offsetBy(dx: inset.left, dy: inset.top))
+//                    if lineRange.endLocation == textStorage.length, font.leading == 0 {
+//                        rect.origin.y += abs(font.descender/2)
+//                    }
+                    rects.append(rect.offsetBy(dx: origin.x, dy: origin.y))
                 }
                 drawBackground(backgroundStyle: backgroundStyle, rects: rects, currentCGContext: currentCGContext)
             }
         }
+        drawLineNumbers(textStorage: textStorage, currentCGContext: currentCGContext)
+        currentCGContext.restoreGState()
+    }
+
+    private func drawLineNumbers(textStorage: NSTextStorage, currentCGContext: CGContext) {
+        var lineNumber = 1
+        guard layoutManagerDelegate?.isLineNumbersEnabled == true,
+              let lineNumberFormatting = layoutManagerDelegate?.lineNumberFormatting else { return }
+
+        let lineNumberWrappingMarker = layoutManagerDelegate?.lineNumberWrappingMarker
+        enumerateLineFragments(forGlyphRange: textStorage.fullRange) { [weak self] rect, usedRect, _, range, _ in
+            guard let self else { return }
+            let paraRange = self.textStorage?.mutableString.paragraphRange(for: range).firstCharacterRange
+            let lineNumberToDisplay = layoutManagerDelegate?.lineNumberString(for: lineNumber) ?? "\(lineNumber)"
+
+            if range.location == paraRange?.location {
+                self.drawLineNumber(lineNumber: lineNumberToDisplay, rect: rect.integral, lineNumberFormatting: lineNumberFormatting, currentCGContext: currentCGContext)
+                lineNumber += 1
+            } else if let lineNumberWrappingMarker {
+                self.drawLineNumber(lineNumber: lineNumberWrappingMarker, rect: rect.integral, lineNumberFormatting: lineNumberFormatting, currentCGContext: currentCGContext)
+            }
+        }
+
+        // Draw line number for additional new line with \n, if exists
+        drawLineNumber(lineNumber: "\(lineNumber)", rect: extraLineFragmentRect.integral, lineNumberFormatting: lineNumberFormatting, currentCGContext: currentCGContext)
+    }
+    
+    func drawLineNumber(lineNumber: String, rect: CGRect, lineNumberFormatting: LineNumberFormatting, currentCGContext: CGContext) {
+        let gutterWidth = lineNumberFormatting.gutter.width
+        let attributes = lineNumberAttributes(lineNumberFormatting: lineNumberFormatting)
+        let text = NSAttributedString(string: "\(lineNumber)", attributes: attributes)
+        let markerSize = text.boundingRect(with: .zero, options: [], context: nil).integral.size
+        var markerRect = self.rectForLineNumbers(markerSize: markerSize, rect: rect, width: gutterWidth)
+        let listMarkerImage = self.generateBitmap(string: text, rect: markerRect)
+        listMarkerImage.draw(at: markerRect.origin)
+    }
+
+    private func lineNumberAttributes(lineNumberFormatting: LineNumberFormatting) -> [NSAttributedString.Key: Any] {
+        let font = lineNumberFormatting.font
+        let textColor = lineNumberFormatting.textColor
+        let paraStyle = NSMutableParagraphStyle()
+        paraStyle.alignment = .right
+
+        return [
+            NSAttributedString.Key.font: font,
+            NSAttributedString.Key.foregroundColor: textColor,
+            NSAttributedString.Key.paragraphStyle: paraStyle
+        ]
     }
 
     private func drawBackground(backgroundStyle: BackgroundStyle, rects: [CGRect], currentCGContext: CGContext) {

@@ -25,9 +25,11 @@ import SnapshotTesting
 @testable import Proton
 
 class EditorSnapshotTests: SnapshotTestCase {
+    let mockLineNumberProvider = MockLineNumberProvider()
+
     override func setUp() {
         super.setUp()
-        recordMode = false
+        mockLineNumberProvider.indexOffSet = 0
     }
 
     func testRendersPlaceholder() {
@@ -1041,6 +1043,63 @@ class EditorSnapshotTests: SnapshotTestCase {
         assertSnapshot(matching: viewController.view, as: .image, record: recordMode)
     }
 
+    func testBackgroundStyleWithParagraphAndLineSpacing() {
+        let viewController = EditorTestViewController()
+        let editor = viewController.editor
+        editor.paragraphStyle.paragraphSpacing = 13
+        editor.paragraphStyle.lineSpacing = 4
+//        editor.font = UIFont.systemFont(ofSize: 30, weight: .medium)
+
+        let text =
+        """
+        Line 1 text Line 1 text Line 1 text Line 2 text Line 2 text Line 2 text Line 3 text Line 3
+        """
+
+        let rangeToUpdate = NSRange(location: 20, length: 58)
+
+        editor.appendCharacters(NSAttributedString(string: text))
+
+        let textField = AutogrowingTextField()
+        textField.backgroundColor = .cyan
+        textField.addBorder()
+        textField.font = editor.font
+        textField.text = "in1"
+
+        let offsetProvider = MockAttachmentOffsetProvider()
+        offsetProvider.offset = CGPoint(x: 0, y: -4)
+
+        let attachment = Attachment(textField, size: .matchContent)
+        attachment.offsetProvider = offsetProvider
+        textField.boundsObserver = attachment
+
+        editor.insertAttachment(in: editor.textEndRange, attachment: attachment)
+
+
+        let textField1 = AutogrowingTextField()
+        textField1.backgroundColor = .cyan
+        textField1.addBorder()
+        textField1.font = editor.font
+        textField1.text = "in2"
+
+        let attachment1 = Attachment(textField1, size: .matchContent)
+        attachment1.offsetProvider = offsetProvider
+        textField1.boundsObserver = attachment1
+
+        editor.insertAttachment(in: NSRange(location: 52, length: 0), attachment: attachment1)
+
+        viewController.render(size: CGSize(width: 300, height: 350))
+        let backgroundStyle = BackgroundStyle(color: .cyan,
+                                              roundedCornerStyle: .absolute(value: 5),
+                                              border: BorderStyle(lineWidth: 1, color: .blue),
+                                              heightMode: .matchTextExact, insets: UIEdgeInsets(top: -5, left: -2, bottom: -5, right: -2))
+        editor.addAttributes([
+            .backgroundStyle: backgroundStyle
+        ], at: rangeToUpdate)
+
+        viewController.render(size: CGSize(width: 300, height: 350))
+        assertSnapshot(matching: viewController.view, as: .image, record: recordMode)
+    }
+
     func testBackgroundStyleWithIncreasedFontSize() {
         let viewController = EditorTestViewController()
         let editor = viewController.editor
@@ -1102,6 +1161,39 @@ class EditorSnapshotTests: SnapshotTestCase {
         assertSnapshot(matching: viewController.view, as: .image, record: recordMode)
     }
 
+    func testWrappedBackgroundInNestedEditor() {
+        let viewController = EditorTestViewController()
+        let editor = viewController.editor
+        let config = GridConfiguration(
+            columnsConfiguration: [
+                GridColumnConfiguration(width: .fixed(60)),
+                GridColumnConfiguration(width: .fractional(0.30)),
+                GridColumnConfiguration(width: .fractional(0.30)),
+            ],
+            rowsConfiguration: [
+                GridRowConfiguration(initialHeight: 40),
+                GridRowConfiguration(initialHeight: 40),
+            ])
+        let attachment = GridViewAttachment(config: config)
+
+        editor.insertAttachment(in: editor.textEndRange, attachment: attachment)
+
+        XCTAssertEqual(attachment.view.containerAttachment, attachment)
+
+        viewController.render(size: CGSize(width: 300, height: 225))
+
+        let backgroundStyle = BackgroundStyle(color: .red,
+                                              roundedCornerStyle: .absolute(value: 6),
+                                              border: BorderStyle(lineWidth: 1, color: .yellow),
+                                              shadow: ShadowStyle(color: .blue, offset: CGSize(width: 2, height: 2), blur: 2),
+                                              widthMode: .matchTextExact)
+
+        let cell01 = attachment.view.cellAt(rowIndex: 0, columnIndex: 1)
+        cell01?.editor.attributedText = NSAttributedString(string: "testLongString ThatWrapsToMultiple Lines", attributes: [.backgroundStyle: backgroundStyle, .textBlock: 1])
+
+        assertSnapshot(matching: viewController.view, as: .image, record: recordMode)
+    }
+
     func testEditorWithArabicText() {
         let viewController = EditorTestViewController()
         let editor = viewController.editor
@@ -1154,6 +1246,237 @@ class EditorSnapshotTests: SnapshotTestCase {
 
         viewController.render(size: CGSize(width: 300, height: 300))
         assertSnapshot(matching: viewController.view, as: .image, record: false)
+    }
+
+    func testLineNumbersBlank() {
+        let viewController = EditorTestViewController()
+        let editor = viewController.editor
+        editor.isLineNumbersEnabled = true
+        viewController.render(size: CGSize(width: 300, height: 75))
+        assertSnapshot(matching: viewController.view, as: .image, record: recordMode)
+    }
+    
+    func testLineNumbersDefault() {
+        let viewController = EditorTestViewController()
+        let editor = viewController.editor
+        editor.isLineNumbersEnabled = true
+        let text = """
+           Test line 1
+           Test line 2
+           """
+        
+        editor.appendCharacters(NSAttributedString(string: text))
+        
+        viewController.render(size: CGSize(width: 300, height: 125))
+        assertSnapshot(matching: viewController.view, as: .image, record: recordMode)
+    }
+
+    func testLineNumbersWithLineSpacing() {
+        let viewController = EditorTestViewController()
+        let editor = viewController.editor
+        editor.paragraphStyle.lineSpacing = 30
+
+        editor.isLineNumbersEnabled = true
+        let text = """
+           Test line 1 Test line 1 Test line 1 Test line 1
+           Test line 2 Test line 1 Test line 1 Test line 1
+           Test line 3 Test line 1 Test line 1
+           Test line 4
+           """
+
+        editor.appendCharacters(NSAttributedString(string: text))
+
+        viewController.render(size: CGSize(width: 300, height: 400))
+        assertSnapshot(matching: viewController.view, as: .image, record: recordMode)
+    }
+
+    func testLineNumbersWithParagraphSpacing() {
+        let viewController = EditorTestViewController()
+        let editor = viewController.editor
+        editor.paragraphStyle.paragraphSpacing = 30
+        editor.lineNumberProvider = mockLineNumberProvider
+        editor.isLineNumbersEnabled = true
+        let text = """
+           Test line 1 Test line 1 Test line 1 Test line 1
+           Test line 2 Test line 1 Test line 1 Test line 1
+           Test line 3 Test line 1 Test line 1
+           Test line 4
+           """
+
+        editor.appendCharacters(NSAttributedString(string: text))
+
+        viewController.render(size: CGSize(width: 300, height: 400))
+        assertSnapshot(matching: viewController.view, as: .image, record: recordMode)
+    }
+
+    func FIXME_testLongLineNumbers() {
+        recordMode = true
+        let viewController = EditorTestViewController()
+        let editor = viewController.editor
+        editor.lineNumberProvider = mockLineNumberProvider
+        mockLineNumberProvider.indexOffSet = 888
+        editor.isLineNumbersEnabled = true
+        let text = """
+           Test line 1 Test line 1 Test line 1 Test line 1
+           Test line 2 Test line 1 Test line 1 Test line 1
+           Test line 3 Test line 1 Test line 1
+           Test line 4
+           """
+
+        editor.appendCharacters(NSAttributedString(string: text))
+
+        viewController.render(size: CGSize(width: 300, height: 400))
+        assertSnapshot(matching: viewController.view, as: .image, record: recordMode)
+    }
+
+    func testLineNumbersEnableDisable() {
+        let viewController = EditorTestViewController()
+        let editor = viewController.editor
+        
+        let text = """
+           Test line 1
+           Test line 2
+           """
+        
+        editor.appendCharacters(NSAttributedString(string: text))
+        
+        editor.isLineNumbersEnabled = false
+        viewController.render(size: CGSize(width: 300, height: 125))
+        assertSnapshot(matching: viewController.view, as: .image, record: recordMode)
+        
+        editor.isLineNumbersEnabled = true
+        viewController.render(size: CGSize(width: 300, height: 125))
+        assertSnapshot(matching: viewController.view, as: .image, record: recordMode)
+        
+        editor.isLineNumbersEnabled = false
+        viewController.render(size: CGSize(width: 300, height: 125))
+        assertSnapshot(matching: viewController.view, as: .image, record: recordMode)
+    }
+    
+    func testLineNumbersWithFormatting() {
+        let viewController = EditorTestViewController()
+        let editor = viewController.editor
+        editor.isLineNumbersEnabled = true
+        editor.lineNumberFormatting = LineNumberFormatting(
+            textColor: .white,
+            font: UIFont.italicSystemFont(ofSize: 17),
+            gutter: Gutter(
+                width: 20,
+                backgroundColor: .black,
+                lineColor: .red,
+                lineWidth: 2
+            ))
+        
+        let text = """
+           Test line 1
+           Test line 2
+           """
+        
+        editor.appendCharacters(NSAttributedString(string: text))
+        
+        viewController.render(size: CGSize(width: 300, height: 125))
+        assertSnapshot(matching: viewController.view, as: .image, record: recordMode)
+    }
+    
+    
+    func testLineNumbersWithWrappedText() {
+        let viewController = EditorTestViewController()
+        let editor = viewController.editor
+        editor.isLineNumbersEnabled = true
+        let text = """
+           Test line 1 Test line 1 Test line 1 Test line 1 Test line 1 Test line 1
+           Test line 2 Test line 2
+           Test line 3 Test line 3
+           """
+        
+        editor.appendCharacters(NSAttributedString(string: text))
+        
+        viewController.render(size: CGSize(width: 300, height: 220))
+        assertSnapshot(matching: viewController.view, as: .image, record: recordMode)
+    }
+    
+    func testCustomLineNumbersWithWrappedText() {
+        let viewController = EditorTestViewController()
+        let editor = viewController.editor
+        editor.lineNumberProvider = mockLineNumberProvider
+        editor.isLineNumbersEnabled = true
+        let text = """
+           Test line 1 Test line 1 Test line 1 Test line 1 Test line 1 Test line 1
+           Test line 2 Test line 2
+           Test line 3 Test line 3
+           """
+        
+        editor.appendCharacters(NSAttributedString(string: text))
+        
+        viewController.render(size: CGSize(width: 300, height: 220))
+        assertSnapshot(matching: viewController.view, as: .image, record: recordMode)
+    }
+
+    func testSelectOnTap() {
+        let viewController = EditorTestViewController()
+        let editor = viewController.editor
+        let offsetProvider = MockAttachmentOffsetProvider()
+        offsetProvider.offset = CGPoint(x: 0, y: -4)
+
+        editor.font = UIFont.systemFont(ofSize: 12)
+
+        var panel = PanelView()
+        panel.editor.forceApplyAttributedText = true
+        panel.backgroundColor = .cyan
+        panel.layer.borderWidth = 1.0
+        panel.layer.cornerRadius = 4.0
+        panel.layer.borderColor = UIColor.black.cgColor
+
+        let attachment = Attachment(panel, size: .fullWidth)
+        panel.boundsObserver = attachment
+        panel.editor.font = editor.font
+
+        panel.attributedText = NSAttributedString(string: "In full-width attachment")
+
+        editor.replaceCharacters(in: .zero, with: "This text is in Editor")
+        editor.insertAttachment(in: editor.textEndRange, attachment: attachment)
+
+        let touch = UITouch()
+        attachment.selectOnTap = true
+        attachment.selectionStyle.alpha = 0.7
+        attachment.selectionStyle.cornerRadius = 5
+        (attachment.contentView?.superview as? AttachmentContentView)?.onContentViewTapped()
+
+        viewController.render()
+        assertSnapshot(matching: viewController.view, as: .image, record: recordMode)
+    }
+
+    func testSelectOnTapInNonEditableEditor() {
+        let viewController = EditorTestViewController()
+        let editor = viewController.editor
+        let offsetProvider = MockAttachmentOffsetProvider()
+        offsetProvider.offset = CGPoint(x: 0, y: -4)
+
+        editor.font = UIFont.systemFont(ofSize: 12)
+
+        var panel = PanelView()
+        panel.editor.forceApplyAttributedText = true
+        panel.backgroundColor = .cyan
+        panel.layer.borderWidth = 1.0
+        panel.layer.cornerRadius = 4.0
+        panel.layer.borderColor = UIColor.black.cgColor
+
+        let attachment = Attachment(panel, size: .fullWidth)
+        panel.boundsObserver = attachment
+        panel.editor.font = editor.font
+
+        panel.attributedText = NSAttributedString(string: "In full-width attachment")
+
+        editor.replaceCharacters(in: .zero, with: "This text is in Editor")
+        editor.insertAttachment(in: editor.textEndRange, attachment: attachment)
+
+        editor.isEditable = false
+        let touch = UITouch()
+        attachment.selectOnTap = true
+        (attachment.contentView?.superview as? AttachmentContentView)?.onContentViewTapped()
+
+        viewController.render()
+        assertSnapshot(matching: viewController.view, as: .image, record: recordMode)
     }
 
     private func addCaretRect(at range: NSRange, in editor: EditorView, color: UIColor) {

@@ -262,6 +262,12 @@ public class GridView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    public override var backgroundColor: UIColor? {
+        didSet {
+            gridView.backgroundColor = backgroundColor
+        }
+    }
+
     private func setup() {
         gridView.translatesAutoresizingMaskIntoConstraints = false
         leadingShadowView.translatesAutoresizingMaskIntoConstraints = false
@@ -569,7 +575,8 @@ public class GridView: UIView {
     private func resetShadows() {
         if let frozenColumnMaxIndex {
             let frozenColumnWidth = gridView.columnWidths.prefix(upTo: frozenColumnMaxIndex + 1).reduce(0) { partialResult, dimension in
-                partialResult + dimension.value(basedOn: frame.size.width)
+                let viewport = gridView.bounds
+                return partialResult + dimension.value(basedOn: frame.size.width, viewportWidth: viewport.width)
             }
             let borderOffSet = self.config.style.borderWidth
             leadingShadowConstraint.constant = frozenColumnWidth + borderOffSet
@@ -654,6 +661,9 @@ extension GridView: GridContentViewDelegate {
     func gridContentView(_ gridContentView: GridContentView, shouldChangeColumnWidth proposedWidth: CGFloat, for columnIndex: Int) -> Bool {
         delegate?.gridView(self, shouldChangeColumnWidth: proposedWidth, for: columnIndex) ?? true
     }
+
+    func gridContentView(_ gridContentView: GridContentView, cell: GridCell, didChangeBackgroundColor color: UIColor?, oldColor: UIColor?) {
+    }
 }
 
 class CellHandleButton: UIButton {
@@ -673,3 +683,9 @@ class CellHandleButton: UIButton {
 }
 
 extension GridView: AsyncDeferredRenderable { }
+
+extension GridView: BackgroundColorObserving {
+    public func containerEditor(_ editor: EditorView, backgroundColorUpdated color: UIColor?, oldColor: UIColor?) {
+        backgroundColor = color
+    }
+}

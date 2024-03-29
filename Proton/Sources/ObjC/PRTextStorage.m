@@ -74,8 +74,6 @@
 }
 
 - (void)replaceCharactersInRange:(NSRange)range withAttributedString:(NSAttributedString *)attrString {
-    // TODO: Add undo behaviour
-    
     // Handles the crash when nested list receives enter key in quick succession that unindents the list item.
     // Check only required with Obj-C based TextStorage
     if ((range.location + range.length) > _storage.length) {
@@ -103,23 +101,32 @@
 
     NSAttributedString *deletedText = [_storage attributedSubstringFromRange:range];
     [_textStorageDelegate textStorage:self will:deletedText insertText:replacementString in:range];
-    [super replaceCharactersInRange:range withAttributedString:replacementString];
+    [super replaceCharactersInRange:range withAttributedString: replacementString];
 }
 
 - (void)replaceCharactersInRange:(NSRange)range withString:(NSString *)str {
-    [self beginEditing];
-    NSInteger delta = str.length - range.length;
-
+    // Capture any attachments in the original range to be deleted after editing is complete
     NSArray<NSTextAttachment *> *attachmentsToDelete = [self attachmentsForRange:range];
-    for (NSTextAttachment *attachment in attachmentsToDelete) {
-        [_textStorageDelegate textStorage:self didDelete:attachment];
-    }
 
+    [self beginEditing];
+
+    NSInteger delta = str.length - range.length;
     [_storage replaceCharactersInRange:range withString:str];
     [_storage fixAttributesInRange:NSMakeRange(0, _storage.length)];
     [self edited:NSTextStorageEditedCharacters & NSTextStorageEditedAttributes range:range changeInLength:delta];
 
     [self endEditing];
+    // Deleting of Attachment needs to happen after editing has ended. If invoked while textStorage editing is
+    // taking place, this may sometimes result in a crash(_fillLayoutHoleForCharacterRange).
+    [self deleteAttachments:attachmentsToDelete];
+}
+
+-(void)deleteAttachments:(NSArray<NSTextAttachment *>*) attachments {
+    // Deleting of Attachment needs to happen after editing has ended. If invoked while textStorage editing is
+    // taking place, this may sometimes result in a crash(_fillLayoutHoleForCharacterRange).
+    for (NSTextAttachment *attachment in attachments) {
+        [_textStorageDelegate textStorage:self didDelete:attachment];
+    }
 }
 
 - (void)setAttributes:(NSDictionary<NSString *, id> *)attrs range:(NSRange)range {

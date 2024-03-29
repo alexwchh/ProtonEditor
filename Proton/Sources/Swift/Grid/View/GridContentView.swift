@@ -43,6 +43,8 @@ protocol GridContentViewDelegate: AnyObject {
     func gridContentView(_ gridContentView: GridContentView, didDeleteColumnAt index: Int)
 
     func gridContentView(_ gridContentView: GridContentView, shouldChangeColumnWidth proposedWidth: CGFloat, for columnIndex: Int) -> Bool
+
+    func gridContentView(_ gridContentView: GridContentView, cell: GridCell, didChangeBackgroundColor color: UIColor?, oldColor: UIColor?)
 }
 
 class GridContentView: UIScrollView {
@@ -67,6 +69,12 @@ class GridContentView: UIScrollView {
     }
 
     private(set) var selectedCells: [GridCell] = [GridCell]()
+
+    override var backgroundColor: UIColor? {
+        didSet {
+            cells.forEach { $0.updateBackgroundColorFromParent(color: backgroundColor, oldColor: oldValue) }
+        }
+    }
 
     var numberOfColumns: Int {
         grid.numberOfColumns
@@ -447,6 +455,10 @@ extension GridContentView: GridCellDelegate {
         gridContentViewDelegate?.gridContentView(self, didChangeSelectionAt: range, attributes: attributes, contentType: contentType, in: cell)
     }
 
+    func cell(_ cell: GridCell, didChangeBackgroundColor color: UIColor?, oldColor: UIColor?) {
+        gridContentViewDelegate?.gridContentView(self, cell: cell, didChangeBackgroundColor: color, oldColor: oldColor)
+    }
+
     func cell(_ cell: GridCell, didChangeBounds bounds: CGRect) {
         guard  let row = cell.rowSpan.first else { return }
         if grid.rowHeights.count > row,
@@ -495,6 +507,8 @@ extension GridContentView: UIGestureRecognizerDelegate {
 }
 
 extension GridContentView: GridDelegate {
+    var viewport: CGRect { bounds }
+
     func grid(_ grid: Grid, shouldChangeColumnWidth proposedWidth: CGFloat, for columnIndex: Int) -> Bool {
         gridContentViewDelegate?.gridContentView(self, shouldChangeColumnWidth: proposedWidth, for: columnIndex) ?? true
     }

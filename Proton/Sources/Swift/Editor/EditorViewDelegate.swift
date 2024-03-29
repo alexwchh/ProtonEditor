@@ -126,6 +126,16 @@ public protocol EditorViewDelegate: AnyObject {
     /// This invocation only applies in default mode of rendering attachment. If `EditorView` has `AsyncAttachmentRenderingDelegate` provided,
     /// that delegate will receive the event instead.
     func editor(_ editor: EditorView, didRenderAttachment attachment: Attachment)
+
+    /// Determines if attachment should be deleted when encountering backspace on attachment
+    /// - Parameters:
+    ///   - editor: Editor view receiving the event.
+    ///   - attachment: Attachment at the range where backspace is received
+    /// - Returns: `true` to delete, else `false`
+    /// - Note: If either this or`Attachment`s property of `selectBeforeDelete` is `true`, the attachment will be shown as selected on backspace.
+    func editor(_ editor: EditorView, shouldSelectAttachmentOnBackspace attachment: Attachment) -> Bool?
+
+    func editor(_ editor: EditorView, didChangeBackgroundColor color: UIColor?, oldColor: UIColor?)
 }
 
 public extension EditorViewDelegate {
@@ -144,4 +154,8 @@ public extension EditorViewDelegate {
     func editor(_ editor: EditorView, isReady: Bool) { }
     func editor(_ editor: EditorView, didChangeEditable isEditable: Bool) { }
     func editor(_ editor: EditorView, didRenderAttachment attachment: Attachment) { }
+    func editor(_ editor: EditorView, shouldSelectAttachmentOnBackspace attachment: Attachment) -> Bool? {
+        return nil
+    }
+    func editor(_ editor: EditorView, didChangeBackgroundColor color: UIColor?, oldColor: UIColor?) { }
 }

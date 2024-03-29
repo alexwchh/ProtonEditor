@@ -21,6 +21,11 @@
 import Foundation
 import UIKit
 
+public enum ListMarkerDebugOption {
+    case `default`
+    case replace(with: String)
+}
+
 /// Text process capable of processing keyboard inputs specific to lists. `ListTextProcessor` only works after a range of text
 /// has been converted to list using `ListCommand`.
 ///
@@ -31,12 +36,22 @@ import UIKit
 /// 3. Tab: Indents the current level to next indentation level. A level may only be indented 1 level deeper than previous level.
 /// First level items cannot be indented.
 /// 4. Shift-Tab: Outdents text in list by one level each time. Using this on first level exits the list formatting for given text.
-public class ListTextProcessor: TextProcessing {
+open class ListTextProcessor: TextProcessing {
     public let name = "listProcessor"
+
+
+    public static var markerDebugOptions: ListMarkerDebugOption = .default
 
     // Zero width space - used for laying out the list bullet/number in an empty line.
     // This is required when using tab on a blank bullet line. Without this, layout calculations are not performed.
-    static let blankLineFiller = "\u{200B}"
+    static var blankLineFiller: String {
+        switch markerDebugOptions {
+        case .default:
+            return "\u{200B}"
+        case .replace(let string):
+            return string
+        }
+    }
 
     /// Initializes text processor.
     public init() { }
@@ -46,7 +61,7 @@ public class ListTextProcessor: TextProcessing {
 
     var executeOnDidProcess: ((EditorView) -> Void)?
 
-    public func shouldProcess(_ editorView: EditorView, shouldProcessTextIn range: NSRange, replacementText text: String) -> Bool {
+    open func shouldProcess(_ editorView: EditorView, shouldProcessTextIn range: NSRange, replacementText text: String) -> Bool {
         let rangeToCheck = max(0, min(range.endLocation, editorView.contentLength) - 1)
         if editorView.contentLength > 0,
            let value = editorView.attributedText.attribute(.listItem, at: rangeToCheck, effectiveRange: nil),
@@ -56,15 +71,26 @@ public class ListTextProcessor: TextProcessing {
         return true
     }
 
-    public func processInterrupted(editor: EditorView, at range: NSRange) { }
+    open func processInterrupted(editor: EditorView, at range: NSRange) { }
 
-    public func willProcess(editor: EditorView, deletedText: NSAttributedString, insertedText: NSAttributedString, range: NSRange) { }
+    open func willProcess(editor: EditorView, deletedText: NSAttributedString, insertedText: NSAttributedString, range: NSRange) { }
 
-    public func process(editor: EditorView, range editedRange: NSRange, changeInLength delta: Int) -> Processed {
+    open func process(editor: EditorView, range editedRange: NSRange, changeInLength delta: Int) -> Processed {
         return false
     }
 
-    public func handleKeyWithModifiers(editor: EditorView, key: EditorKey, modifierFlags: UIKeyModifierFlags, range editedRange: NSRange)  {
+    open func didProcess(editor: EditorView) {
+        executeOnDidProcess?(editor)
+        executeOnDidProcess = nil
+        guard editor.selectedRange.endLocation < editor.contentLength else { return }
+        let lastChar = editor.attributedText.substring(from: NSRange(location: editor.selectedRange.location, length: 1))
+        if lastChar == ListTextProcessor.blankLineFiller {
+            editor.selectedRange = editor.selectedRange.nextPosition
+        }
+        editor.typingAttributes[.skipNextListMarker] = nil
+    }
+    
+    open func handleKeyWithModifiers(editor: EditorView, key: EditorKey, modifierFlags: UIKeyModifierFlags, range editedRange: NSRange)  {
         guard editedRange != .zero else { return }
         switch key {
         case .tab:
@@ -178,17 +204,6 @@ public class ListTextProcessor: TextProcessing {
         }
     }
 
-    public func didProcess(editor: EditorView) {
-        executeOnDidProcess?(editor)
-        executeOnDidProcess = nil
-        guard editor.selectedRange.endLocation < editor.contentLength else { return }
-        let lastChar = editor.attributedText.substring(from: NSRange(location: editor.selectedRange.location, length: 1))
-        if lastChar == ListTextProcessor.blankLineFiller {
-            editor.selectedRange = editor.selectedRange.nextPosition
-        }
-        editor.typingAttributes[.skipNextListMarker] = nil
-    }
-
     private func updateListItemIfRequired(editor: EditorView, editedRange: NSRange, indentMode: Indentation, attributeValue: Any?) {
         let lines = editor.contentLinesInRange(editedRange)
 
@@ -208,7 +223,7 @@ public class ListTextProcessor: TextProcessing {
             }
 
             let paraStyle = line.text.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle
-            let mutableStyle = updatedParagraphStyle(paraStyle: paraStyle,  listLineFormatting: editor.listLineFormatting, indentMode: indentMode)
+            let mutableStyle = updatedParagraphStyle(paraStyle: paraStyle, listLineFormatting: editor.listLineFormatting, indentMode: indentMode, defaultParaStyle: editor.paragraphStyle)
 
             let previousLine = editor.previousContentLine(from: line.range.location)
             if let previousLine = previousLine,
@@ -265,7 +280,7 @@ public class ListTextProcessor: TextProcessing {
         editor.attributedText.enumerateAttribute(.paragraphStyle, in: subListRange, options: []) { value, range, stop in
             if let style = value as? NSParagraphStyle {
                 if style.firstLineHeadIndent >= originalParaStyle.firstLineHeadIndent + editor.listLineFormatting.indentation {
-                    let mutableStyle = updatedParagraphStyle(paraStyle: style, listLineFormatting: editor.listLineFormatting, indentMode: indentMode)
+                    let mutableStyle = updatedParagraphStyle(paraStyle: style, listLineFormatting: editor.listLineFormatting, indentMode: indentMode, defaultParaStyle: editor.paragraphStyle)
                     editor.addAttribute(.paragraphStyle, value: mutableStyle ?? editor.paragraphStyle, at: range)
                 } else {
                     stop.pointee = true
@@ -283,7 +298,7 @@ public class ListTextProcessor: TextProcessing {
 
         var attrs = editor.typingAttributes
         let paraStyle = attrs[.paragraphStyle] as? NSParagraphStyle
-        let updatedStyle = updatedParagraphStyle(paraStyle: paraStyle, listLineFormatting: editor.listLineFormatting, indentMode: indentMode)
+        let updatedStyle = updatedParagraphStyle(paraStyle: paraStyle, listLineFormatting: editor.listLineFormatting, indentMode: indentMode, defaultParaStyle: editor.paragraphStyle)
         attrs[.paragraphStyle] = updatedStyle
         attrs[.listItem] = updatedStyle?.firstLineHeadIndent ?? 0 > 0.0 ? listAttributeValue : nil
         let marker = NSAttributedString(string: ListTextProcessor.blankLineFiller, attributes: attrs)
@@ -291,7 +306,7 @@ public class ListTextProcessor: TextProcessing {
         editor.selectedRange = editedRange.nextPosition
     }
 
-    func updatedParagraphStyle(paraStyle: NSParagraphStyle?, listLineFormatting: LineFormatting, indentMode: Indentation) -> NSParagraphStyle? {
+    func updatedParagraphStyle(paraStyle: NSParagraphStyle?, listLineFormatting: LineFormatting, indentMode: Indentation, defaultParaStyle: NSParagraphStyle) -> NSParagraphStyle? {
         let mutableStyle = paraStyle?.mutableCopy() as? NSMutableParagraphStyle
         let indent = listLineFormatting.indentation
         if indentMode == .indent {
@@ -302,9 +317,13 @@ public class ListTextProcessor: TextProcessing {
             mutableStyle?.headIndent = mutableStyle?.firstLineHeadIndent ?? 0
         }
         mutableStyle?.paragraphSpacingBefore = listLineFormatting.spacingBefore
+        if let spacingAfter = listLineFormatting.spacingAfter {
+            mutableStyle?.paragraphSpacing = spacingAfter
+        }
 
         if mutableStyle?.firstLineHeadIndent == 0, indentMode == .outdent {
-            mutableStyle?.paragraphSpacingBefore = paraStyle?.lineFormatting.spacingBefore ?? 0
+            mutableStyle?.paragraphSpacingBefore = defaultParaStyle.lineFormatting.spacingBefore
+            mutableStyle?.paragraphSpacing = defaultParaStyle.lineFormatting.spacingAfter ?? 0
         }
 
         return mutableStyle

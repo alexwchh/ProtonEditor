@@ -117,6 +117,7 @@ class CommandsExampleViewController: ExamplesBaseViewController {
 
         editor.registerProcessor(ListTextProcessor())
 //        editor.paragraphStyle.paragraphSpacingBefore = 20
+        editor.paragraphStyle.paragraphSpacing = 15
 
         self.buttons = makeCommandButtons()
         for button in buttons {
@@ -325,6 +326,15 @@ extension CommandsExampleViewController: EditorViewDelegate {
     func editor(_ editor: EditorView, shouldHandle key: EditorKey, modifierFlags: UIKeyModifierFlags, at range: NSRange, handled: inout Bool) {
         print("Key: \(key)")
     }
+
+    func editor(_ editor: EditorView, shouldSelectAttachmentOnBackspace attachment: Attachment) -> Bool? {
+        guard let panel = attachment as? PanelAttachment, panel.isInSelectedRange == false else { return false }
+
+        panel.view.editor.setFocus()
+        panel.view.editor.selectedRange = panel.view.editor.textEndRange
+
+        return false
+    }
 }
 
 extension CommandsExampleViewController: GridViewDelegate {
@@ -455,7 +465,7 @@ extension CommandsExampleViewController: GridViewDelegate {
 }
 
 class ListFormattingProvider: EditorListFormattingProvider {
-    let listLineFormatting: LineFormatting = LineFormatting(indentation: 25, spacingBefore: 0)
+    let listLineFormatting: LineFormatting = LineFormatting(indentation: 25, spacingBefore: 0, spacingAfter: 5)
     let sequenceGenerators: [SequenceGenerator] =
         [NumericSequenceGenerator(),
          DiamondBulletSequenceGenerator(),
