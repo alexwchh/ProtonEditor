@@ -21,6 +21,7 @@ let package = Package(
     name: "Proton",
     platforms: [
         .iOS(.v14),
+        
         .visionOS(.v1)
     ],
     products: [

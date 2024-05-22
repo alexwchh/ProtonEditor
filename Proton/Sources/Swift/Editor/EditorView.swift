@@ -270,19 +270,19 @@ open class EditorView: UIView {
     }
     
     public func undo(){
-        richTextView.undoManager?.undo()
+        self.undoManager?.undo()
     }
     
     public func redo(){
-        richTextView.undoManager?.redo()
+        self.undoManager?.redo()
     }
     
     public func canUndo() -> Bool?{
-        richTextView.undoManager?.canUndo
+        self.undoManager?.canUndo
     }
     
     public func canRedo() -> Bool?{
-        richTextView.undoManager?.canRedo
+        self.undoManager?.canRedo
     }
 
 
@@ -431,6 +431,7 @@ open class EditorView: UIView {
         return editorLayoutLineFrom(range: richTextView.currentLineRange )
     }
 
+    /// First line of content based on layout in the Editor. Nil if editor is empty.
     /// First line of content based on layout in the Editor. Nil if editor is empty.
     /// - Note:
     /// This is based on the layout of text in the `EditorView` and not on the actual lines based on `\n`. The range may
